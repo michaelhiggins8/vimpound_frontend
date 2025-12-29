@@ -28,7 +28,7 @@ export default function SignIn() {
 
       if (data.user) {
         // Successful sign in
-        navigate('/')
+        navigate('/dashboard/overview')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')

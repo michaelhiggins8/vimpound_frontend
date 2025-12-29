@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import NextSection from './home_two_d/HomeTwoD'
+import logoImage from '../assets/logo.png'
 // Phone Booth component
 function PhoneBooth({ onLoaded }: { onLoaded?: () => void }) {
   const { scene } = useGLTF('/public_phone_booth.glb')
@@ -393,13 +394,20 @@ function Home() {
     }
   }
 
+  const handleLogoClick = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Check if the click target is the Dashboard button or its children
+    // Check if the click target is the Dashboard button, Logo button, or their children
     const target = e.target as HTMLElement
-    const dashboardButton = target.closest('button')
+    const button = target.closest('button')
     
-    // If clicked on Dashboard button, don't scroll
-    if (dashboardButton && dashboardButton.textContent?.includes('Dashboard')) {
+    // If clicked on Dashboard button or Logo button, don't scroll
+    if (button && (button.textContent?.includes('Dashboard') || button.querySelector('img'))) {
       return
     }
     
@@ -420,9 +428,13 @@ function Home() {
       // This is when section bottom reaches viewport top
       const targetScrollPosition = sectionTop + sectionHeight - windowHeight
       
+      // Add a small extra scroll amount in the down direction
+      const extraScrollDelta = 80 // Small additional scroll in pixels
+      const finalScrollPosition = targetScrollPosition + extraScrollDelta
+      
       // Smooth scroll to target position
       window.scrollTo({
-        top: targetScrollPosition,
+        top: finalScrollPosition,
         behavior: 'smooth'
       })
     }
@@ -476,6 +488,75 @@ function Home() {
 
   return (
     <div style={{ width: '100%', margin: 0, padding: 0 }}>
+      {/* Logo Button - Top Left Corner - Fixed position, always visible */}
+      <button
+        onClick={handleLogoClick}
+        style={{
+          position: 'fixed',
+          top: '10px',
+          left: '10px',
+          zIndex: 1000,
+          padding: '16px 32px',
+          backgroundColor: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          transform: 'scale(1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.05)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)'
+        }}
+      >
+        <img 
+          src={logoImage} 
+          alt="Logo" 
+          style={{
+            height: '80px',
+            width: 'auto',
+            objectFit: 'contain',
+            transform: 'scale(1.5)',
+          }}
+        />
+      </button>
+      {/* Dashboard Button - Top Right Corner - Fixed position, always visible */}
+      <button
+        onClick={handleDashboardClick}
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          zIndex: 1000,
+          padding: '16px 32px',
+          backgroundColor: '#12A594',
+          color: '#ffffff',
+          border: 'none',
+          borderRadius: '9999px',
+          fontSize: '18px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          transition: 'all 0.2s ease',
+          transform: 'scale(1)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#0f8a7a'
+          e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          e.currentTarget.style.transform = 'scale(1.05)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#12A594'
+          e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+          e.currentTarget.style.transform = 'scale(1)'
+        }}
+      >
+        Open Dashboard
+      </button>
       {/* Canvas Section - Fixed height for scroll-based zoom */}
       <div
         ref={canvasSectionRef}
@@ -514,39 +595,6 @@ function Home() {
             <PhoneBooth onLoaded={handleModelLoaded} />
             <CameraController targetProgressRef={targetScrollProgressRef} />
           </Canvas>
-          {/* Dashboard Button - Top Right Corner */}
-          <button
-            onClick={handleDashboardClick}
-            style={{
-              position: 'absolute',
-              top: '20px',
-              right: '20px',
-              zIndex: 100,
-              padding: '16px 32px',
-              backgroundColor: '#12A594',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '9999px',
-              fontSize: '18px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-              transition: 'all 0.2s ease',
-              transform: 'scale(1)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#0f8a7a'
-              e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-              e.currentTarget.style.transform = 'scale(1.05)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#12A594'
-              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
-              e.currentTarget.style.transform = 'scale(1)'
-            }}
-          >
-            Open Dashboard
-          </button>
           {!modelLoaded && <LoadingSpinner />}
           <MatrixTypingText shouldStart={modelLoaded} />
         </div>

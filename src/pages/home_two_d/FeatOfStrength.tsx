@@ -198,7 +198,7 @@ export default function FeatOfStrength() {
           </span>
         </h1>
         <p className="text-base sm:text-lg md:text-xl lg:text-xl leading-relaxed sm:leading-[1.75] text-center text-gray-700 max-w-3xl mx-auto px-2 relative">
-          <span className="relative z-10">Vimpound is your phone AI voice agent that handles pick up calls for Impound lots. You get a real phone number your customers can call have real conversations with. No more phone trees. No more staff getting yelled at by angry customers.</span>
+          <span className="relative z-10">Vimpound is your phone AI voice agent that handles pick up calls for your Impound lot. You get a real phone number that your pick up customers can call and have real conversations with. No more phone trees. No more staff getting yelled at by angry customers. Just real time authentic conversations.</span>
         </p>
       </div>
 

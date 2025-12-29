@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import logoImage from '../../assets/logo.png'
 
 // ===== CONFIGURATION - Edit these values to customize =====
 const CONFIG = {
@@ -209,11 +210,12 @@ export default function SideBar() {
       {/* Top Section - Branding */}
       <div className="p-6 pb-5 border-b border-[#e5e7eb] bg-gradient-to-b from-white to-[#fafbfc]">
         <div className="flex items-center gap-3 mb-5">
-          <div 
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md transition-transform duration-200 hover:scale-105"
-            style={{ backgroundColor: CONFIG.logoColor }}
-          >
-            {CONFIG.brandLogo}
+          <div className="w-12 h-12 rounded-lg shadow-md overflow-hidden">
+            <img 
+              src={logoImage}
+              alt={CONFIG.brandName}
+              className="w-full h-full object-cover scale-150 transition-transform duration-200 hover:scale-[1.6]"
+            />
           </div>
           <span className="text-xl font-bold text-[#111827] tracking-tight">
             {CONFIG.brandName}
