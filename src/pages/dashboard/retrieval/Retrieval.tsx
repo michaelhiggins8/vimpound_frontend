@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import SideBar from '../SideBar'
 import ItemsNeededCard from './items_needed/ItemsNeeded'
 import CostCard from './cost/Cost'
+import AuctionTriggersCard from './auction_triggers/AuctionTriggersCard'
 import { supabase } from '../../../lib/supabase'
 
 interface OrgContent {
   documents_needed: string | null
   cost_to_release_short: string | null
   cost_to_release_long: string | null
+  auction_triggers?: string | null
 }
 
 export default function Retrieval() {
@@ -107,6 +109,12 @@ export default function Retrieval() {
           description="Tell your agent the costs to always mention and costs that very depending on the situation."
           costToReleaseShort={orgContent?.cost_to_release_short || ''}
           costToReleaseLong={orgContent?.cost_to_release_long || ''}
+          onUpdate={fetchOrgContent}
+        />
+
+        <AuctionTriggersCard 
+          title="Auction Triggers"
+          description="The conditions callers need to know that will cause a vehicle to go to auction (for example not picked up after 30 days)"         auctionTriggers={orgContent?.auction_triggers || ''}
           onUpdate={fetchOrgContent}
         />
       </div>

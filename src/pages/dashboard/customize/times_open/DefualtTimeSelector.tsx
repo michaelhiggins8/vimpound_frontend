@@ -290,24 +290,90 @@ export default function DefualtTimeSelector({ initialHours = '' }: DefualtTimeSe
       setLocalPeriod(p)
     }, [value])
 
-    const handleHourChange = (newHour: string) => {
+    const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newHour = e.target.value
+      // Allow empty string for typing
+      if (newHour === '') {
+        setLocalHour('')
+        return
+      }
+      
+      // Allow typing digits
+      if (!/^\d+$/.test(newHour)) {
+        return
+      }
+      
       const numHour = parseInt(newHour, 10)
-      if (isNaN(numHour) || numHour < 1 || numHour > 12) return
+      
+      // Allow partial input while typing (e.g., "8" when typing "8" to replace "4")
+      // But validate on blur or when complete
       setLocalHour(newHour)
-      onChange(formatTime12To24(numHour, parseInt(localMinute, 10), localPeriod))
+      
+      // Only update the actual time if it's a valid hour
+      if (!isNaN(numHour) && numHour >= 1 && numHour <= 12) {
+        const currentMinute = parseInt(localMinute, 10) || 0
+        onChange(formatTime12To24(numHour, currentMinute, localPeriod))
+      }
     }
 
-    const handleMinuteChange = (newMinute: string) => {
+    const handleHourBlur = () => {
+      const numHour = parseInt(localHour, 10)
+      // If invalid or empty, reset to current hour from value
+      if (isNaN(numHour) || numHour < 1 || numHour > 12) {
+        const { hour: h } = formatTime24To12(value)
+        setLocalHour(h.toString())
+      } else {
+        // Ensure it's updated with the correct value
+        const currentMinute = parseInt(localMinute, 10) || 0
+        onChange(formatTime12To24(numHour, currentMinute, localPeriod))
+      }
+    }
+
+    const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newMinute = e.target.value
+      // Allow empty string for typing
+      if (newMinute === '') {
+        setLocalMinute('')
+        return
+      }
+      
+      // Allow typing digits
+      if (!/^\d+$/.test(newMinute)) {
+        return
+      }
+      
       const numMinute = parseInt(newMinute, 10)
-      if (isNaN(numMinute) || numMinute < 0 || numMinute > 59) return
-      const padded = newMinute.padStart(2, '0')
-      setLocalMinute(padded)
-      onChange(formatTime12To24(parseInt(localHour, 10), numMinute, localPeriod))
+      
+      // Allow partial input while typing
+      setLocalMinute(newMinute)
+      
+      // Only update the actual time if it's a valid minute
+      if (!isNaN(numMinute) && numMinute >= 0 && numMinute <= 59) {
+        const currentHour = parseInt(localHour, 10) || 1
+        onChange(formatTime12To24(currentHour, numMinute, localPeriod))
+      }
+    }
+
+    const handleMinuteBlur = () => {
+      const numMinute = parseInt(localMinute, 10)
+      // If invalid or empty, reset to current minute from value
+      if (isNaN(numMinute) || numMinute < 0 || numMinute > 59) {
+        const { minute: m } = formatTime24To12(value)
+        setLocalMinute(m.toString().padStart(2, '0'))
+      } else {
+        // Ensure it's padded and updated
+        const padded = numMinute.toString().padStart(2, '0')
+        setLocalMinute(padded)
+        const currentHour = parseInt(localHour, 10) || 1
+        onChange(formatTime12To24(currentHour, numMinute, localPeriod))
+      }
     }
 
     const handlePeriodChange = (newPeriod: 'AM' | 'PM') => {
       setLocalPeriod(newPeriod)
-      onChange(formatTime12To24(parseInt(localHour, 10), parseInt(localMinute, 10), newPeriod))
+      const currentHour = parseInt(localHour, 10) || 1
+      const currentMinute = parseInt(localMinute, 10) || 0
+      onChange(formatTime12To24(currentHour, currentMinute, newPeriod))
     }
 
     return (
@@ -315,20 +381,20 @@ export default function DefualtTimeSelector({ initialHours = '' }: DefualtTimeSe
         <label className="text-xs font-medium text-gray-700 whitespace-nowrap flex-shrink-0">{label}:</label>
         <div className="flex items-center gap-1 border border-gray-300 rounded-lg px-2 py-1.5 bg-white shadow-sm hover:border-blue-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all min-w-0">
           <input
-            type="number"
-            min="1"
-            max="12"
+            type="text"
+            inputMode="numeric"
             value={localHour}
-            onChange={(e) => handleHourChange(e.target.value)}
+            onChange={handleHourChange}
+            onBlur={handleHourBlur}
             className="w-8 text-sm font-medium text-gray-900 outline-none text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none flex-shrink-0"
           />
           <span className="text-gray-500 font-medium flex-shrink-0">:</span>
           <input
-            type="number"
-            min="0"
-            max="59"
+            type="text"
+            inputMode="numeric"
             value={localMinute}
-            onChange={(e) => handleMinuteChange(e.target.value)}
+            onChange={handleMinuteChange}
+            onBlur={handleMinuteBlur}
             className="w-8 text-sm font-medium text-gray-900 outline-none text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none flex-shrink-0"
           />
           <select

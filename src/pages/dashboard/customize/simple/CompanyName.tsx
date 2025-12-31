@@ -78,7 +78,7 @@ export default function CompanyName({ initialValue = '' }: CompanyNameProps) {
           Company Name
         </h3>
         <p className="text-sm text-[#6b7280] leading-relaxed mb-6">
-          The name that your agent will use on calls.</p>
+          The comapny name that your agent will use on calls.</p>
 
         <input
           id="company-name"

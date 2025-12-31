@@ -159,7 +159,7 @@ export default function NotSubscribed({ onSubscribeClick }: NotSubscribedProps) 
             </div>
             <div className="flex-1">
               <span className="font-semibold text-[#111827] block mb-1">Usage</span>
-              <span className="text-[#374151]">$0.25 per minute</span>
+              <span className="text-[#374151]">$0.20 per minute</span>
             </div>
           </li>
         </ul>
