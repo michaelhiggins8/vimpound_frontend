@@ -137,9 +137,10 @@ function parseHoursString(hoursString: string | null | undefined): WeekSchedule 
 
 interface DefualtTimeSelectorProps {
   initialHours?: string
+  onUpdate?: () => void
 }
 
-export default function DefualtTimeSelector({ initialHours = '' }: DefualtTimeSelectorProps) {
+export default function DefualtTimeSelector({ initialHours = '', onUpdate }: DefualtTimeSelectorProps) {
   const [schedule, setSchedule] = useState<WeekSchedule>(() => {
     return parseHoursString(initialHours)
   })
@@ -219,6 +220,7 @@ export default function DefualtTimeSelector({ initialHours = '' }: DefualtTimeSe
       }
 
       setSuccess(data.message || 'Business hours updated successfully')
+      onUpdate?.() // Invalidate and refetch the query cache
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {

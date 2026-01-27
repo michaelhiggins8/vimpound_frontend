@@ -441,39 +441,51 @@ function Home() {
   }
 
   useEffect(() => {
+    let ticking = false
+    let rafId: number | null = null
+
     const handleScroll = () => {
       if (!canvasSectionRef.current) return
       
-      const canvasSection = canvasSectionRef.current
-      const windowHeight = window.innerHeight
-      const scrollPosition = window.scrollY
-      const sectionTop = canvasSection.offsetTop
-      const sectionHeight = canvasSection.offsetHeight
-      
-      // Calculate scroll progress within the canvas section (0 to 1)
-      // Progress from 0 (section top at viewport top) to 1 (section bottom at viewport top)
-      const progress = Math.max(0, Math.min(1, (scrollPosition - sectionTop) / (sectionHeight - windowHeight)))
-      
-      // Update camera zoom progress (0 to 1)
-      targetScrollProgressRef.current = progress
-      
-      // Fade transition: canvas fades out as progress approaches 1
-      // Start fading at 70% progress, fully transparent at 100%
-      const fadeStart = 0.7
-      const fadeEnd = 1.0
-      let canvasAlpha = 1
-      let nextAlpha = 0
-      
-      if (progress >= fadeStart) {
-        // Calculate fade progress from fadeStart to fadeEnd
-        const fadeProgress = (progress - fadeStart) / (fadeEnd - fadeStart)
-        canvasAlpha = 1 - fadeProgress
-        nextAlpha = fadeProgress
+      if (!ticking) {
+        rafId = requestAnimationFrame(() => {
+          const canvasSection = canvasSectionRef.current
+          if (!canvasSection) return
+          
+          const windowHeight = window.innerHeight
+          const scrollPosition = window.scrollY
+          const sectionTop = canvasSection.offsetTop
+          const sectionHeight = canvasSection.offsetHeight
+          
+          // Calculate scroll progress within the canvas section (0 to 1)
+          // Progress from 0 (section top at viewport top) to 1 (section bottom at viewport top)
+          const progress = Math.max(0, Math.min(1, (scrollPosition - sectionTop) / (sectionHeight - windowHeight)))
+          
+          // Update camera zoom progress (0 to 1)
+          targetScrollProgressRef.current = progress
+          
+          // Fade transition: canvas fades out as progress approaches 1
+          // Start fading at 70% progress, fully transparent at 100%
+          const fadeStart = 0.7
+          const fadeEnd = 1.0
+          let canvasAlpha = 1
+          let nextAlpha = 0
+          
+          if (progress >= fadeStart) {
+            // Calculate fade progress from fadeStart to fadeEnd
+            const fadeProgress = (progress - fadeStart) / (fadeEnd - fadeStart)
+            canvasAlpha = 1 - fadeProgress
+            nextAlpha = fadeProgress
+          }
+          
+          // Update opacities smoothly
+          setCanvasOpacity(canvasAlpha)
+          setNextSectionOpacity(nextAlpha)
+          
+          ticking = false
+        })
+        ticking = true
       }
-      
-      // Update opacities smoothly
-      setCanvasOpacity(canvasAlpha)
-      setNextSectionOpacity(nextAlpha)
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -483,6 +495,9 @@ function Home() {
     return () => {
       window.removeEventListener('scroll', handleScroll)
       window.removeEventListener('resize', handleScroll)
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+      }
     }
   }, [])
 
@@ -586,6 +601,8 @@ function Home() {
           <Canvas
             camera={{ position: [0, 0, 5], fov: 50 }}
             style={{ background: '#fff', display: 'block', width: '100%', height: '100%' }}
+            frameloop={canvasOpacity > 0.1 ? 'always' : 'never'}
+            performance={{ min: 0.5 }}
           >
             <ambientLight intensity={0.5} />
             <directionalLight position={[5, 5, 5]} intensity={1} />

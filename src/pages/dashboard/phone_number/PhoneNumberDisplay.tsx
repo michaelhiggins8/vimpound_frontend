@@ -125,7 +125,7 @@ export default function PhoneNumberDisplay({ phoneNumber, onEditClick }: PhoneNu
           <div className="text-sm text-gray-600">
             <p className="font-medium text-gray-700 mb-1">Need to update your number?</p>
             <p className="text-gray-500">
-              You can change your phone number at any time. (may take several minutes to fully update after completion)</p>
+              You can change your phone number <strong>once</strong> every 30 days. (may take several minutes to fully update after completion)</p>
           </div>
           <button
             onClick={onEditClick}

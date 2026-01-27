@@ -20,7 +20,7 @@ const NAVIGATION = [
   
   // BUILD Section
   {
-    section: "Customize",
+    section: "Customize Agent",
     items: [{ to: "/dashboard/phone_number", label: "Phone Number", icon: "phone" },
       { to: "/dashboard/customize", label: "Identity", icon: "person" },
       { to: "/dashboard/retrieval", label: "Retrieval", icon: "users" },
@@ -32,8 +32,8 @@ const NAVIGATION = [
   {
     section: "Vehicle Management",
     items: [
+      { to: "/dashboard/tow_requests", label: "Tow Requests", icon: "list" },
       { to: "/dashboard/vehicle_panel", label: "Vehicle Panel", icon: "key" },
-
     ],
   },
   

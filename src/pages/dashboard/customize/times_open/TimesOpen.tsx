@@ -6,9 +6,10 @@ interface TimesOpenCardProps {
   title: string
   description?: string
   defaultHoursOfOperation?: string
+  onUpdate?: () => void
 }
 
-export default function TimesOpenCard({ title, description, defaultHoursOfOperation = '' }: TimesOpenCardProps) {
+export default function TimesOpenCard({ title, description, defaultHoursOfOperation = '', onUpdate }: TimesOpenCardProps) {
   const [isDefaultMode, setIsDefaultMode] = useState(true)
 
   return (
@@ -70,7 +71,7 @@ export default function TimesOpenCard({ title, description, defaultHoursOfOperat
 
       <div className="flex flex-col gap-6">
         
-        {isDefaultMode ? <DefualtTimeSelector initialHours={defaultHoursOfOperation} /> : <ExceptionDates />}
+        {isDefaultMode ? <DefualtTimeSelector initialHours={defaultHoursOfOperation} onUpdate={onUpdate} /> : <ExceptionDates />}
       </div>
     </div>
   )

@@ -76,7 +76,7 @@ export default function BillingCard({ title, description, children, headerAction
   }, [])
 
   return (
-    <div className="bg-white border-2 border-[#10b981] rounded-xl p-8 shadow-lg mb-6 transition-shadow hover:shadow-xl">
+    <div className="bg-white rounded-xl p-8 shadow-lg mb-6 transition-shadow hover:shadow-xl">
       {(title || description || headerAction) && (
         <div className={`flex items-start justify-between ${description ? 'mb-6' : 'mb-7'}`}>
           <div className="flex-1 pr-4">

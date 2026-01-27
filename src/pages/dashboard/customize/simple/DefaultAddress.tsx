@@ -3,9 +3,10 @@ import { supabase } from '../../../../lib/supabase'
 
 interface DefaultAddressProps {
   initialValue?: string
+  onUpdate?: () => void
 }
 
-export default function DefaultAddress({ initialValue = '' }: DefaultAddressProps) {
+export default function DefaultAddress({ initialValue = '', onUpdate }: DefaultAddressProps) {
   const [defaultAddress, setDefaultAddress] = useState(initialValue)
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function DefaultAddress({ initialValue = '' }: DefaultAddressProp
 
       setSuccess(data.message || 'Default address updated successfully')
       setDefaultAddress('') // Clear the input after successful update
+      onUpdate?.() // Invalidate and refetch the query cache
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {

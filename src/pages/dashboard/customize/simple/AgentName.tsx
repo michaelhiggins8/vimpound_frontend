@@ -3,9 +3,10 @@ import { supabase } from '../../../../lib/supabase'
 
 interface AgentNameProps {
   initialValue?: string
+  onUpdate?: () => void
 }
 
-export default function AgentName({ initialValue = '' }: AgentNameProps) {
+export default function AgentName({ initialValue = '', onUpdate }: AgentNameProps) {
   const [agentName, setAgentName] = useState(initialValue)
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function AgentName({ initialValue = '' }: AgentNameProps) {
 
       setSuccess(data.message || 'Agent name updated successfully')
       setAgentName('') // Clear the input after successful update
+      onUpdate?.() // Invalidate and refetch the query cache
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {

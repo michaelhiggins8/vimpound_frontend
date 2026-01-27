@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
+import { memo } from 'react'
 
-export default function LandingPageFooter() {
+function LandingPageFooter() {
   const navigate = useNavigate()
 
   const handleContactUs = () => {
@@ -11,11 +12,19 @@ export default function LandingPageFooter() {
     navigate('/signup')
   }
 
+  const handleTerms = () => {
+    navigate('/terms')
+  }
+
+  const handlePrivacyPolicy = () => {
+    navigate('/privacy-policy')
+  }
+
   return (
     <div className="w-full bg-black text-white min-h-screen flex flex-col relative overflow-hidden">
       {/* Subtle background accent for visual interest */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/3 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" style={{ willChange: 'transform' }}></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/3 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" style={{ willChange: 'transform' }}></div>
 
       {/* Main Content Section - Upper Left */}
       <div className="flex-1 flex items-center justify-start p-8 md:p-12 lg:p-16 lg:p-20 relative z-10">
@@ -52,19 +61,37 @@ export default function LandingPageFooter() {
       <div className="w-full flex flex-col sm:flex-row justify-between items-center sm:items-end p-8 md:p-12 lg:p-16 lg:p-20 relative z-10 border-t border-white/10">
         {/* Copyright - Bottom Left */}
         <div className="text-sm md:text-base text-white/60 mb-4 sm:mb-0 font-medium">
-          2025 Vimpound AI
+          2026 Vimpound AI
         </div>
 
-        {/* Contact Us - Bottom Right */}
-        <button
-          onClick={handleContactUs}
-          className="text-sm md:text-base text-white/80 hover:text-white transition-colors duration-200 font-medium relative group"
-        >
-          Contact Us
-          <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300"></span>
-        </button>
+        {/* Links - Bottom Right */}
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+          <button
+            onClick={handleTerms}
+            className="text-sm md:text-base text-white/80 hover:text-white transition-colors duration-200 font-medium relative group"
+          >
+            Terms
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300"></span>
+          </button>
+          <button
+            onClick={handlePrivacyPolicy}
+            className="text-sm md:text-base text-white/80 hover:text-white transition-colors duration-200 font-medium relative group"
+          >
+            Privacy Policy
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300"></span>
+          </button>
+          <button
+            onClick={handleContactUs}
+            className="text-sm md:text-base text-white/80 hover:text-white transition-colors duration-200 font-medium relative group"
+          >
+            Contact Us
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300"></span>
+          </button>
+        </div>
       </div>
     </div>
   )
 }
+
+export default memo(LandingPageFooter)
 

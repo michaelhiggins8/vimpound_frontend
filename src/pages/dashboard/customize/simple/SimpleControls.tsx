@@ -10,6 +10,7 @@ interface SimpleControlsCardProps {
   companyName?: string
   defaultAddress?: string
   timeZone?: string
+  onUpdate?: () => void
 }
 
 export default function SimpleControlsCard({ 
@@ -18,7 +19,8 @@ export default function SimpleControlsCard({
   agentName = '',
   companyName = '',
   defaultAddress = '',
-  timeZone = ''
+  timeZone = '',
+  onUpdate
 }: SimpleControlsCardProps) {
   return (
     <div className="bg-white border-2 border-[#10b981] rounded-xl p-8 shadow-lg mb-6 transition-shadow hover:shadow-xl">
@@ -39,16 +41,16 @@ export default function SimpleControlsCard({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 py-4">
         <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-200 aspect-square m-2">
-          <AgentName initialValue={agentName} />
+          <AgentName initialValue={agentName} onUpdate={onUpdate} />
         </div>
         <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-200 aspect-square m-2">
-          <CompanyName initialValue={companyName} />
+          <CompanyName initialValue={companyName} onUpdate={onUpdate} />
         </div>
         <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-200 aspect-square m-2">
-          <DefaultAddress initialValue={defaultAddress} />
+          <DefaultAddress initialValue={defaultAddress} onUpdate={onUpdate} />
         </div>
         <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-200 aspect-square m-2">
-          <TimeZone initialValue={timeZone} />
+          <TimeZone initialValue={timeZone} onUpdate={onUpdate} />
         </div>
       </div>
     </div>

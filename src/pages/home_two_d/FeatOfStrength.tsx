@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Vapi from '@vapi-ai/web'
 
@@ -14,7 +14,7 @@ interface OrgContent {
   time_zone: string | null
 }
 
-export default function FeatOfStrength() {
+function FeatOfStrength() {
   const navigate = useNavigate()
   const [vapi, setVapi] = useState<Vapi | null>(null)
   const [isConnected, setIsConnected] = useState(false)
@@ -25,9 +25,13 @@ export default function FeatOfStrength() {
   const [orgContent, setOrgContent] = useState<OrgContent | null>(null)
   const vapiRef = useRef<Vapi | null>(null)
 
-  // Get API key and assistant ID from environment variables
+  // Get API key and assistant IDs from environment variables
   const apiKey = import.meta.env.VITE_VAPI_PUBLIC_API_KEY
-  const assistantId = import.meta.env.VITE_VAPI_ASSISTANT_ID
+  // Squad assistant IDs
+  const vimpoundSalesRepAssistantId = import.meta.env.VITE_VIMPOUND_SALES_REP_ASSISTANT_ID
+  const routerAssistantId = import.meta.env.VITE_ROUTER_ASSISTANT_ID
+  const towRequestAssistantId = import.meta.env.VITE_TOW_REQUEST_ASSISTANT_ID
+  const questionRequestAssistantId = import.meta.env.VITE_QUESTION_REQUEST_ASSISTANT_ID
   const backendUrl = import.meta.env.VITE_BACKEND_URL
   // Get phone number from environment variable or URL params (for landing page)
   // You can also get it from URL: const urlParams = new URLSearchParams(window.location.search); const phoneNumber = urlParams.get('phone')
@@ -72,8 +76,9 @@ export default function FeatOfStrength() {
       return
     }
 
-    if (!assistantId) {
-      setError('VITE_VAPI_ASSISTANT_ID is not set in environment variables')
+    // Validate all squad assistant IDs are present
+    if (!vimpoundSalesRepAssistantId || !routerAssistantId || !towRequestAssistantId || !questionRequestAssistantId) {
+      setError('One or more squad assistant IDs are not set in environment variables. Required: VITE_VIMPOUND_SALES_REP_ASSISTANT_ID, VITE_ROUTER_ASSISTANT_ID, VITE_TOW_REQUEST_ASSISTANT_ID, VITE_QUESTION_REQUEST_ASSISTANT_ID')
       return
     }
 
@@ -131,40 +136,69 @@ export default function FeatOfStrength() {
         vapiInstance.stop()
       }
     }
-  }, [apiKey, assistantId])
+  }, [apiKey, vimpoundSalesRepAssistantId, routerAssistantId, towRequestAssistantId, questionRequestAssistantId])
 
   const startCall = () => {
-    if (vapi && assistantId) {
-      setIsLoading(true)
-      setError(null)
-      try {
-        // Prepare variable values from org content (same as backend webhook)
-        const variableValues: Record<string, string | null> = {}
-        
-        if (orgContent) {
-          variableValues.agent_name = orgContent.agent_name
-          variableValues.company_name = orgContent.company_name
-          variableValues.default_hours_of_operation = orgContent.default_hours_of_operation
-          variableValues.documents_needed = orgContent.documents_needed
-          variableValues.cost_to_release_short = orgContent.cost_to_release_short
-          variableValues.org_id = orgContent.id
-          variableValues.default_address = orgContent.default_address
-          variableValues.time_zone = orgContent.time_zone
-        }
+    // Validate all required assistant IDs are present
+    if (!vapi || !vimpoundSalesRepAssistantId || !routerAssistantId || !towRequestAssistantId || !questionRequestAssistantId) {
+      setError('Missing required squad assistant IDs')
+      return
+    }
 
-        // Start call with variable values if we have org data
-        if (Object.keys(variableValues).length > 0) {
-          vapi.start(assistantId, {
-            variableValues: variableValues
-          })
-        } else {
-          // Start without variable values if no org data available
-          vapi.start(assistantId)
-        }
-      } catch (err) {
-        setIsLoading(false)
-        setError(err instanceof Error ? err.message : 'Failed to start call')
+    setIsLoading(true)
+    setError(null)
+    try {
+      // Prepare variable values from org content (same as backend webhook)
+      const variableValues: Record<string, string | null> = {}
+      
+      if (orgContent) {
+        variableValues.agent_name = orgContent.agent_name
+        variableValues.company_name = orgContent.company_name
+        variableValues.default_hours_of_operation = orgContent.default_hours_of_operation
+        variableValues.documents_needed = orgContent.documents_needed
+        variableValues.cost_to_release_short = orgContent.cost_to_release_short
+        variableValues.org_id = orgContent.id
+        variableValues.default_address = orgContent.default_address
+        variableValues.time_zone = orgContent.time_zone
       }
+
+      // Create squad configuration with 4 assistants
+      // VIMPOUND_SALES_REP is the initial assistant (first in members array)
+      const squadConfig = {
+        members: [
+          {
+            assistantId: vimpoundSalesRepAssistantId,
+            assistantOverrides: {
+              variableValues: variableValues
+            }
+          },
+          {
+            assistantId: routerAssistantId,
+            assistantOverrides: {
+              variableValues: variableValues
+            }
+          },
+          {
+            assistantId: towRequestAssistantId,
+            assistantOverrides: {
+              variableValues: variableValues
+            }
+          },
+          {
+            assistantId: questionRequestAssistantId,
+            assistantOverrides: {
+              variableValues: variableValues
+            }
+          }
+        ]
+      }
+
+      // Start call with squad configuration
+      // Format: vapi.start(null, null, squadConfig)
+      vapi.start(null, null, squadConfig)
+    } catch (err) {
+      setIsLoading(false)
+      setError(err instanceof Error ? err.message : 'Failed to start call')
     }
   }
 
@@ -181,10 +215,10 @@ export default function FeatOfStrength() {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 md:p-8 lg:p-12 overflow-hidden">
       {/* Subtle Background Decorative Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-[#12A594]/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#12A594]/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ willChange: 'transform' }}>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-[#12A594]/5 rounded-full blur-3xl animate-pulse" style={{ willChange: 'transform' }}></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s', willChange: 'transform' }}></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#12A594]/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s', willChange: 'transform' }}></div>
       </div>
 
       {/* Header Section - Improved Visual Hierarchy */}
@@ -198,7 +232,7 @@ export default function FeatOfStrength() {
           </span>
         </h1>
         <p className="text-base sm:text-lg md:text-xl lg:text-xl leading-relaxed sm:leading-[1.75] text-center text-gray-700 max-w-3xl mx-auto px-2 relative">
-          <span className="relative z-10">Vimpound is your phone AI voice agent that handles pick up calls for your Impound lot. You get a real phone number that your pick up customers can call and have real conversations with. No more phone trees. No more staff getting yelled at by angry customers. Just real time authentic conversations.</span>
+          <span className="relative z-10">Vimpound is your phone A.I. voice agent that handles the public facing calls for for your Impound-tow company. You get a real phone number that your pick up customers can call and have real conversations with. No more phone trees. No more staff getting yelled at by angry customers. Just real time authentic conversations.</span>
         </p>
       </div>
 
@@ -241,7 +275,7 @@ export default function FeatOfStrength() {
         <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <button
             onClick={isConnected ? endCall : startCall}
-            disabled={!vapi || !assistantId || isLoading}
+            disabled={!vapi || !vimpoundSalesRepAssistantId || !routerAssistantId || !towRequestAssistantId || !questionRequestAssistantId || isLoading}
             aria-label={isConnected ? 'End voice call' : 'Start voice agent'}
             aria-busy={isLoading}
             className={`
@@ -251,11 +285,11 @@ export default function FeatOfStrength() {
                 ? 'px-6 sm:px-8 py-3.5 sm:py-4 text-base sm:text-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 active:from-red-700 active:to-red-800 text-white focus:ring-2 focus:ring-red-500 focus:ring-offset-2 shadow-lg shadow-red-500/30' 
                 : 'px-7 sm:px-10 py-4 sm:py-5 text-base sm:text-lg bg-gradient-to-r from-[#12A594] to-[#0f8a7a] hover:from-[#0f8a7a] hover:to-[#0d7567] active:from-[#0d7567] active:to-[#0b6255] text-white focus:ring-2 focus:ring-[#12A594] focus:ring-offset-2 shadow-xl shadow-[#12A594]/40'
               }
-              ${(!vapi || !assistantId || isLoading) 
+              ${(!vapi || !vimpoundSalesRepAssistantId || !routerAssistantId || !towRequestAssistantId || !questionRequestAssistantId || isLoading) 
                 ? 'opacity-50 cursor-not-allowed transform-none shadow-md' 
                 : 'cursor-pointer hover:shadow-2xl active:shadow-lg transform hover:scale-105 active:scale-100'
               }
-              ${!isConnected && !isLoading && vapi && assistantId ? 'animate-[subtlePulse_3s_ease-in-out_infinite]' : ''}
+              ${!isConnected && !isLoading && vapi && vimpoundSalesRepAssistantId && routerAssistantId && towRequestAssistantId && questionRequestAssistantId ? 'animate-[subtlePulse_3s_ease-in-out_infinite]' : ''}
               disabled:pointer-events-none
               before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-700
             `}
@@ -410,3 +444,5 @@ export default function FeatOfStrength() {
     </div>
   )
 }
+
+export default memo(FeatOfStrength)

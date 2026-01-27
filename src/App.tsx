@@ -8,6 +8,9 @@ import VehiclePanel from './pages/dashboard/vehicle_panel/VehiclePanel'
 import PhoneNumber from './pages/dashboard/phone_number/PhoneNumber'
 import Retrieval from './pages/dashboard/retrieval/Retrieval'
 import Billing from './pages/dashboard/billing/Billing'
+import TowRequests from './pages/dashboard/tow_requests/TowRequests'
+import Terms from './pages/legal/terms'
+import PrivacyPolicy from './pages/legal/PrivacyPolicy'
 
 function App() {
   return (
@@ -15,12 +18,15 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/signin" element={<SignIn />} />
       <Route path="/signup" element={<SignUp />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="dashboard/overview" element={<Overview />} />
       <Route path="dashboard/customize" element={<Customize />} />
       <Route path="dashboard/vehicle_panel" element={<VehiclePanel />} />
       <Route path="dashboard/phone_number" element={<PhoneNumber />} />
       <Route path="dashboard/retrieval" element={<Retrieval />} />
       <Route path="dashboard/billing" element={<Billing />} />
+      <Route path="dashboard/tow_requests" element={<TowRequests />} />
     </Routes>
   )
 }

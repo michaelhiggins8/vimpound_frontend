@@ -5,17 +5,17 @@ import PhoneNumberDisplay from './PhoneNumberDisplay'
 import NoPhoneNumberDisplay from './NoPhoneNumberDisplay'
 import NotSubedPhoneCard from './NotSubedPhoneCard'
 import PhoneNumberModal from './PhoneNumberModal'
-import NoPhoneNumberModal from './NoPhoneNumberModal'
 import { supabase } from '../../../lib/supabase'
 
 export default function PhoneNumber() {
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null)
+  const [phoneNumberLastChanged, setPhoneNumberLastChanged] = useState<string | null>(null)
+  const [phoneNumberFetchError, setPhoneNumberFetchError] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null)
   const [subscriptionLoading, setSubscriptionLoading] = useState(true)
   const [isChangeModalOpen, setIsChangeModalOpen] = useState(false)
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL
   if (!backendUrl) {
@@ -54,7 +54,6 @@ export default function PhoneNumber() {
       })
 
       const data = await response.json()
-
       if (!response.ok) {
         setError(data.detail || 'Failed to check subscription')
         setSubscriptionLoading(false)
@@ -73,6 +72,7 @@ export default function PhoneNumber() {
   const fetchPhoneNumber = async () => {
     setLoading(true)
     setError(null)
+    setPhoneNumberFetchError(false)
 
     try {
       // Get the access token from Supabase
@@ -102,17 +102,22 @@ export default function PhoneNumber() {
       })
 
       const data = await response.json()
-
+      console.log("data: ", data)
       if (!response.ok) {
         setError(data.detail || 'Failed to fetch phone number')
+        setPhoneNumberFetchError(true)
         setLoading(false)
         return
       }
 
       // Set phone number (can be null)
       setPhoneNumber(data.phone_number || null)
+      // Set phone number last changed timestamp (can be null)
+      setPhoneNumberLastChanged(data.phone_number_last_changed || null)
+      setPhoneNumberFetchError(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      setPhoneNumberFetchError(true)
     } finally {
       setLoading(false)
     }
@@ -147,7 +152,7 @@ export default function PhoneNumber() {
       
       <div className="ml-[260px] flex-1 p-10 min-w-0 overflow-x-hidden">
         <h1 className="text-[32px] font-semibold text-[#111827] mb-5">
-          Phone Number
+          Phone Number 
         </h1>
         <p className="text-base text-[#6b7280] leading-relaxed mb-6">
           Manage your phone number settings here.
@@ -182,7 +187,12 @@ export default function PhoneNumber() {
             )}
             {!loading && !error && !phoneNumber && (
               <NoPhoneNumberDisplay 
-                onCreateClick={() => setIsCreateModalOpen(true)}
+                onSubmitPhoneNumber={(phoneNumber) => {
+                  // TODO: Backend logic will be implemented here
+                  // For now, just refresh the phone number list
+                  console.log('Selected phone number:', phoneNumber)
+                  handleModalSuccess()
+                }}
               />
             )}
           </PhoneNumberCard>
@@ -196,14 +206,10 @@ export default function PhoneNumber() {
           onClose={() => setIsChangeModalOpen(false)}
           onSuccess={handleModalSuccess}
           currentPhoneNumber={phoneNumber}
+          phoneNumberLastChanged={phoneNumberLastChanged}
+          hasFetchError={phoneNumberFetchError}
         />
       )}
-      
-      <NoPhoneNumberModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={handleModalSuccess}
-      />
     </div>
   )
 }

@@ -1,49 +1,44 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabase'
-import ShowVehicleModal from './ShowVehicleModal'
+import ShowTowRequestsModal from './ShowTowRequestsModal'
 
-interface VehicleCardProps {
+interface TowRequestsCardProps {
   title?: string
   description?: string
   children?: ReactNode
   headerAction?: ReactNode
 }
 
-interface Vehicle {
-  id: number
+interface TowRequest {
+  id: string
   created_at: string
-  status: string
-  make: string
-  model: string
-  year: number
-  color: string
-  vin_number: string
-  plate_number: string
-  owner_first_name: string
-  owner_last_name: string
-  location: string
+  location: string | null
+  vehicle_description: string | null
+  tow_reason: string | null
+  caller_phone: string | null
+  fuel_type: string | null
 }
 
-interface VehiclesResponse {
-  vehicles: Vehicle[]
-  count: number
+interface TowRequestsResponse {
+  tow_requests: TowRequest[]
+  next_cursor: string | null
+  has_next_page: boolean
 }
 
-interface VehiclesData {
-  vehicles: Vehicle[]
-  hasMore: boolean
+interface TowRequestsData {
+  tow_requests: TowRequest[]
+  next_cursor: string | null
+  has_next_page: boolean
 }
 
-export default function VehicleCard({ title, description, children, headerAction }: VehicleCardProps) {
+export default function TowRequestsCard({ title, description, children, headerAction }: TowRequestsCardProps) {
   const queryClient = useQueryClient()
-  const [currentPage, setCurrentPage] = useState(0)
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
+  const [selectedTowRequest, setSelectedTowRequest] = useState<TowRequest | null>(null)
   const [isShowModalOpen, setIsShowModalOpen] = useState(false)
-  const [hoveredRowId, setHoveredRowId] = useState<number | null>(null)
-  const [sortColumn, setSortColumn] = useState<'vehicle' | 'identifier' | 'date' | null>(null)
+  const [hoveredRowId, setHoveredRowId] = useState<string | null>(null)
+  const [sortColumn, setSortColumn] = useState<'vehicle' | 'location' | 'date' | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
-  const [showIdentifier, setShowIdentifier] = useState<'vin' | 'plate'>('plate')
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL
   if (!backendUrl) {
@@ -51,8 +46,8 @@ export default function VehicleCard({ title, description, children, headerAction
   }
 
   // Main query for initial fetch - uses cache, shows cached data first
-  const { data: vehiclesData, isLoading: loading, error } = useQuery<VehiclesData>({
-    queryKey: ['vehicles', 'initial'],
+  const { data: towRequestsData, isLoading: loading, error } = useQuery<TowRequestsData>({
+    queryKey: ['towRequests', 'initial'],
     queryFn: async () => {
       // Get the access token from Supabase
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
@@ -62,13 +57,13 @@ export default function VehicleCard({ title, description, children, headerAction
       }
 
       if (!session) {
-        throw new Error('You must be signed in to view vehicles')
+        throw new Error('You must be signed in to view tow requests')
       }
 
       const accessToken = session.access_token
 
       // Make the fetch call to the backend
-      const response = await fetch(`${backendUrl}/vehicles?page=0`, {
+      const response = await fetch(`${backendUrl}/tow-requests`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -79,23 +74,22 @@ export default function VehicleCard({ title, description, children, headerAction
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Failed to fetch vehicles')
+        throw new Error(data.detail || 'Failed to fetch tow requests')
       }
 
-      // Check if there are more pages (if count is less than page_size, we've reached the end)
-      const hasMore = data.count === 10
-
       return {
-        vehicles: data.vehicles,
-        hasMore,
+        tow_requests: data.tow_requests,
+        next_cursor: data.next_cursor,
+        has_next_page: data.has_next_page,
       }
     },
     staleTime: 0, // Always refetch on mount to get latest data
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   })
 
-  const vehicles = vehiclesData?.vehicles ?? []
-  const hasMore = vehiclesData?.hasMore ?? false
+  const towRequests = towRequestsData?.tow_requests ?? []
+  const nextCursor = towRequestsData?.next_cursor ?? null
+  const hasNextPage = towRequestsData?.has_next_page ?? false
 
   // Format date for display
   const formatDate = (dateString: string | null): string => {
@@ -123,7 +117,7 @@ export default function VehicleCard({ title, description, children, headerAction
   }
 
   // Handle column sorting
-  const handleSort = (column: 'vehicle' | 'identifier' | 'date') => {
+  const handleSort = (column: 'vehicle' | 'location' | 'date') => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -132,21 +126,17 @@ export default function VehicleCard({ title, description, children, headerAction
     }
   }
 
-  // Sort vehicles
-  const sortedVehicles = [...vehicles].sort((a, b) => {
+  // Sort tow requests
+  const sortedTowRequests = [...towRequests].sort((a, b) => {
     if (!sortColumn) return 0
     
     let comparison = 0
     switch (sortColumn) {
       case 'vehicle':
-        const vehicleA = `${a.year} ${a.make} ${a.model} - ${a.color}`
-        const vehicleB = `${b.year} ${b.make} ${b.model} - ${b.color}`
-        comparison = vehicleA.localeCompare(vehicleB)
+        comparison = (a.vehicle_description || '').localeCompare(b.vehicle_description || '')
         break
-      case 'identifier':
-        const identifierA = showIdentifier === 'vin' ? a.vin_number : a.plate_number
-        const identifierB = showIdentifier === 'vin' ? b.vin_number : b.plate_number
-        comparison = identifierA.localeCompare(identifierB)
+      case 'location':
+        comparison = (a.location || '').localeCompare(b.location || '')
         break
       case 'date':
         comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -156,9 +146,9 @@ export default function VehicleCard({ title, description, children, headerAction
     return sortDirection === 'asc' ? comparison : -comparison
   })
 
-  // Mutation for loading more entries (page-based pagination)
+  // Mutation for loading more entries (cursor-based pagination)
   const loadMoreMutation = useMutation({
-    mutationFn: async (page: number) => {
+    mutationFn: async (cursor: string) => {
       // Get the access token from Supabase
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
@@ -167,13 +157,13 @@ export default function VehicleCard({ title, description, children, headerAction
       }
 
       if (!session) {
-        throw new Error('You must be signed in to view vehicles')
+        throw new Error('You must be signed in to view tow requests')
       }
 
       const accessToken = session.access_token
 
       // Make the fetch call to the backend
-      const response = await fetch(`${backendUrl}/vehicles?page=${page}`, {
+      const response = await fetch(`${backendUrl}/tow-requests?cursor=${encodeURIComponent(cursor)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -184,32 +174,95 @@ export default function VehicleCard({ title, description, children, headerAction
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Failed to fetch vehicles')
+        throw new Error(data.detail || 'Failed to fetch tow requests')
       }
 
-      return data as VehiclesResponse
+      return data as TowRequestsResponse
     },
     onSuccess: (data) => {
       // Append new results to the cached data
-      queryClient.setQueryData<VehiclesData>(['vehicles', 'initial'], (oldData) => {
+      queryClient.setQueryData<TowRequestsData>(['towRequests', 'initial'], (oldData) => {
         if (!oldData) {
           return {
-            vehicles: data.vehicles,
-            hasMore: data.count === 10,
+            tow_requests: data.tow_requests,
+            next_cursor: data.next_cursor,
+            has_next_page: data.has_next_page,
           }
         }
         return {
-          vehicles: [...oldData.vehicles, ...data.vehicles],
-          hasMore: data.count === 10,
+          tow_requests: [...oldData.tow_requests, ...data.tow_requests],
+          next_cursor: data.next_cursor,
+          has_next_page: data.has_next_page,
         }
       })
     },
   })
 
   const handleLoadMore = () => {
-    const nextPage = currentPage + 1
-    setCurrentPage(nextPage)
-    loadMoreMutation.mutate(nextPage)
+    if (nextCursor && !loadMoreMutation.isPending) {
+      loadMoreMutation.mutate(nextCursor)
+    }
+  }
+
+  // Function to fetch a single tow request by ID
+  const fetchSingleTowRequest = async (id: string) => {
+    try {
+      // Get the access token from Supabase
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError || !session) {
+        console.error('Failed to get session for fetching single tow request:', sessionError?.message)
+        return
+      }
+
+      const accessToken = session.access_token
+
+      // Make the fetch call to the backend
+      const response = await fetch(`${backendUrl}/tow-request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ id }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('Failed to fetch single tow request:', data.detail || 'Unknown error')
+        return
+      }
+
+      // Prepend the new/updated entry to the cached list (since it's a newly updated/added record)
+      queryClient.setQueryData<TowRequestsData>(['towRequests', 'initial'], (oldData) => {
+        if (!oldData) {
+          // If no cached data exists, create new cache entry with just this item
+          return {
+            tow_requests: [data],
+            next_cursor: null,
+            has_next_page: false,
+          }
+        }
+        
+        // Check if the entry already exists to avoid duplicates
+        const exists = oldData.tow_requests.some(req => req.id === data.id)
+        if (exists) {
+          // If it exists, remove it and prepend the updated version to the top
+          return {
+            ...oldData,
+            tow_requests: [data, ...oldData.tow_requests.filter(req => req.id !== data.id)],
+          }
+        }
+        // Otherwise, prepend the new entry
+        return {
+          ...oldData,
+          tow_requests: [data, ...oldData.tow_requests],
+        }
+      })
+    } catch (err) {
+      console.error('Error fetching single tow request:', err instanceof Error ? err.message : 'An unexpected error occurred')
+    }
   }
 
   // Persistent connection logic - DO NOT MODIFY
@@ -227,51 +280,34 @@ export default function VehicleCard({ title, description, children, headerAction
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
       if (token) supabase.realtime.setAuth(token)
-
+  
       channel = supabase
-        .channel('debug-vehicles')
+        .channel('debug-tow-requests')
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'vehicles' },
+          { event: 'INSERT', schema: 'public', table: 'tow_requests' },
           (payload) => {
+            //console.log('REALTIME EVENT:', payload)
             const { new: newRecord } = payload
             if (newRecord) {
               const { id } = newRecord
               console.log('ID:', id)
-              // Refresh the list
-              queryClient.invalidateQueries({ queryKey: ['vehicles', 'initial'] })
+              // Fetch the updated/added record and prepend it to the list
+              fetchSingleTowRequest(id)
             }
           }
         )
         .on(
           'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'vehicles' },
+          { event: 'UPDATE', schema: 'public', table: 'tow_requests' },
           (payload) => {
+            //console.log('REALTIME UPDATE EVENT:', payload)
             const { new: updatedRecord } = payload
             if (updatedRecord) {
               const { id } = updatedRecord
               console.log('UPDATED ID:', id)
-              // Refresh the list
-              queryClient.invalidateQueries({ queryKey: ['vehicles', 'initial'] })
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          { event: 'DELETE', schema: 'public', table: 'vehicles' },
-          (payload) => {
-            const { old: deletedRecord } = payload
-            if (deletedRecord) {
-              const { id } = deletedRecord
-              console.log('DELETED ID:', id)
-              // Remove from cache
-              queryClient.setQueryData<VehiclesData>(['vehicles', 'initial'], (oldData) => {
-                if (!oldData) return oldData
-                return {
-                  ...oldData,
-                  vehicles: oldData.vehicles.filter(v => v.id !== id),
-                }
-              })
+              // Fetch the updated record and update it in the list
+              fetchSingleTowRequest(id)
             }
           }
         )
@@ -279,61 +315,17 @@ export default function VehicleCard({ title, description, children, headerAction
           console.log('REALTIME STATUS:', status)
         })
     }
-
+  
     start()
-
+  
     return () => {
       // cleanup
       authListener?.subscription?.unsubscribe()
       if (channel) supabase.removeChannel(channel)
     }
   }, [])
-
-  const handleDeleteVehicle = async (vehicleId: number) => {
-    try {
-      // Get the access token from Supabase
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      
-      if (sessionError) {
-        throw new Error(`Failed to get session: ${sessionError.message}`)
-      }
-
-      if (!session) {
-        throw new Error('You must be signed in to delete a vehicle')
-      }
-
-      const accessToken = session.access_token
-
-      // Make the DELETE request to the backend
-      const response = await fetch(`${backendUrl}/vehicles`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          id: String(vehicleId)
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Failed to delete vehicle')
-      }
-
-      // Remove the vehicle from the cached list
-      queryClient.setQueryData<VehiclesData>(['vehicles', 'initial'], (oldData) => {
-        if (!oldData) return oldData
-        return {
-          ...oldData,
-          vehicles: oldData.vehicles.filter(v => v.id !== vehicleId),
-        }
-      })
-    } catch (err) {
-      console.error('Error deleting vehicle:', err instanceof Error ? err.message : 'An unexpected error occurred')
-    }
-  }
+  
+  
 
   return (
     <div className="bg-white border border-[#e5e7eb] rounded-xl p-8 shadow-lg mb-6 transition-shadow hover:shadow-xl">
@@ -357,7 +349,7 @@ export default function VehicleCard({ title, description, children, headerAction
             </>
           ) : (
             <div className="text-base text-[#6b7280] font-medium">
-              Vehicles
+              Tow Requests
             </div>
           )}
         </div>
@@ -367,37 +359,10 @@ export default function VehicleCard({ title, description, children, headerAction
           </div>
         )}
       </div>
-
-      {/* Toggle for VIN/Plate Number */}
-      <div className="mb-4 flex items-center gap-3">
-        <span className="text-sm font-medium text-[#6b7280]">Show:</span>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowIdentifier('plate')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              showIdentifier === 'plate'
-                ? 'bg-[#3b82f6] text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Plate Number
-          </button>
-          <button
-            onClick={() => setShowIdentifier('vin')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              showIdentifier === 'vin'
-                ? 'bg-[#3b82f6] text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            VIN
-          </button>
-        </div>
-      </div>
       
       {loading && (
         <div className="mb-6 p-4 bg-[#f9fafb] border border-[#e5e7eb] rounded-md">
-          <p className="text-sm text-[#6b7280]">Loading vehicles...</p>
+          <p className="text-sm text-[#6b7280]">Loading tow requests...</p>
         </div>
       )}
 
@@ -407,7 +372,7 @@ export default function VehicleCard({ title, description, children, headerAction
         </div>
       )}
 
-      {!loading && vehicles.length > 0 && (
+      {!loading && towRequests.length > 0 && (
         <div className="mb-6 overflow-x-auto">
           <table className="w-full border-collapse">
             {/* Table Header */}
@@ -433,16 +398,16 @@ export default function VehicleCard({ title, description, children, headerAction
                 </th>
                 <th 
                   className="text-left py-3 px-4 text-sm font-semibold text-[#6b7280] cursor-pointer hover:text-[#111827] transition-colors"
-                  onClick={() => handleSort('identifier')}
+                  onClick={() => handleSort('location')}
                 >
                   <div className="flex items-center gap-2">
-                    <span>{showIdentifier === 'vin' ? 'VIN Number' : 'Plate Number'}</span>
-                    {sortColumn === 'identifier' && (
+                    <span>Location</span>
+                    {sortColumn === 'location' && (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
                       </svg>
                     )}
-                    {sortColumn !== 'identifier' && (
+                    {sortColumn !== 'location' && (
                       <svg className="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
@@ -472,37 +437,37 @@ export default function VehicleCard({ title, description, children, headerAction
             </thead>
             {/* Table Body */}
             <tbody>
-              {sortedVehicles.map((vehicle: Vehicle) => (
+              {sortedTowRequests.map((request: TowRequest) => (
                 <tr
-                  key={vehicle.id}
+                  key={request.id}
                   onClick={() => {
-                    setSelectedVehicle(vehicle)
+                    setSelectedTowRequest(request)
                     setIsShowModalOpen(true)
                   }}
-                  onMouseEnter={() => setHoveredRowId(vehicle.id)}
+                  onMouseEnter={() => setHoveredRowId(request.id)}
                   onMouseLeave={() => setHoveredRowId(null)}
                   className={`border-b border-[#e5e7eb] cursor-pointer transition-colors ${
-                    hoveredRowId === vehicle.id ? 'bg-[#e0f2fe]' : 'bg-white hover:bg-[#f9fafb]'
+                    hoveredRowId === request.id ? 'bg-[#e0f2fe]' : 'bg-white hover:bg-[#f9fafb]'
                   }`}
                 >
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-3">
                       <svg className="w-5 h-5 text-[#3b82f6] flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                        <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
                       </svg>
                       <span className="text-sm text-[#111827] font-medium">
-                        {vehicle.year} {vehicle.make} {vehicle.model} - {vehicle.color}
+                        {request.vehicle_description || 'N/A'}
                       </span>
                     </div>
                   </td>
                   <td className="py-4 px-4">
                     <span className="text-sm text-[#111827]">
-                      {showIdentifier === 'vin' ? vehicle.vin_number : vehicle.plate_number}
+                      {request.location || 'No location'}
                     </span>
                   </td>
                   <td className="py-4 px-4">
                     <span className="text-sm text-[#111827]">
-                      {formatDate(vehicle.created_at)}
+                      {formatDate(request.created_at)}
                     </span>
                   </td>
                   <td className="py-4 px-4">
@@ -526,13 +491,13 @@ export default function VehicleCard({ title, description, children, headerAction
         </div>
       )}
 
-      {!loading && vehicles.length === 0 && !error && (
+      {!loading && towRequests.length === 0 && !error && (
         <div className="mb-6 p-4 bg-[#f9fafb] border border-[#e5e7eb] rounded-md">
-          <p className="text-sm text-[#6b7280]">No vehicles found.</p>
+          <p className="text-sm text-[#6b7280]">No tow requests found.</p>
         </div>
       )}
 
-      {hasMore && (
+      {hasNextPage && (
         <div className="flex justify-center">
           <button
             onClick={handleLoadMore}
@@ -550,14 +515,23 @@ export default function VehicleCard({ title, description, children, headerAction
         </div>
       )}
 
-      <ShowVehicleModal
+      <ShowTowRequestsModal
         isOpen={isShowModalOpen}
         onClose={() => {
           setIsShowModalOpen(false)
-          setSelectedVehicle(null)
+          setSelectedTowRequest(null)
         }}
-        vehicle={selectedVehicle}
-        onDelete={handleDeleteVehicle}
+        towRequest={selectedTowRequest}
+        onDelete={async (towRequestId: string) => {
+          // Remove the tow request from the cached list
+          queryClient.setQueryData<TowRequestsData>(['towRequests', 'initial'], (oldData) => {
+            if (!oldData) return oldData
+            return {
+              ...oldData,
+              tow_requests: oldData.tow_requests.filter(tr => tr.id !== towRequestId),
+            }
+          })
+        }}
       />
     </div>
   )

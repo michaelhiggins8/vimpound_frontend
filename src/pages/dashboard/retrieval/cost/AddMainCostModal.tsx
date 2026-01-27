@@ -315,7 +315,7 @@ export default function AddMainCostModal({ isOpen, onClose, costToReleaseShort, 
                     >
                       {DEFAULT_REASONS.map(reason => (
                         <option key={reason} value={reason}>
-                          {reason === 'custom' ? 'Custom...' : reason}
+                          {reason === 'custom' ? '...' : reason}
                         </option>
                       ))}
                     </select>

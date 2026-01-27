@@ -13,9 +13,11 @@
     "@react-three/drei": "^10.0.0",
     "@react-three/fiber": "^9.0.0",
     "@supabase/supabase-js": "^2.87.1",
+    "@tanstack/react-query": "^5.90.16",
     "@vapi-ai/web": "^2.5.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.10.1",
     "three": "^0.169.0"
   },

@@ -3,9 +3,10 @@ import { supabase } from '../../../../lib/supabase'
 
 interface TimeZoneProps {
   initialValue?: string
+  onUpdate?: () => void
 }
 
-export default function TimeZone({ initialValue = '' }: TimeZoneProps) {
+export default function TimeZone({ initialValue = '', onUpdate }: TimeZoneProps) {
   const [timeZone, setTimeZone] = useState(initialValue)
 
   useEffect(() => {
@@ -83,6 +84,7 @@ export default function TimeZone({ initialValue = '' }: TimeZoneProps) {
 
       setSuccess(data.message || 'Time zone updated successfully')
       setTimeZone('') // Clear the input after successful update
+      onUpdate?.() // Invalidate and refetch the query cache
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {

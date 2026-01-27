@@ -3,9 +3,10 @@ import { supabase } from '../../../../lib/supabase'
 
 interface CompanyNameProps {
   initialValue?: string
+  onUpdate?: () => void
 }
 
-export default function CompanyName({ initialValue = '' }: CompanyNameProps) {
+export default function CompanyName({ initialValue = '', onUpdate }: CompanyNameProps) {
   const [companyName, setCompanyName] = useState(initialValue)
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function CompanyName({ initialValue = '' }: CompanyNameProps) {
 
       setSuccess(data.message || 'Company name updated successfully')
       setCompanyName('') // Clear the input after successful update
+      onUpdate?.() // Invalidate and refetch the query cache
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {

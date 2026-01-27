@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import SideBar from '../SideBar.js'
 import SimpleControlsCard from './simple/SimpleControls.tsx'
 import TimesOpenCard from './times_open/TimesOpen.tsx'
@@ -13,33 +13,25 @@ interface OrgContent {
 }
 
 export default function Customize() {
-  const [orgContent, setOrgContent] = useState<OrgContent | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
+  const queryClient = useQueryClient()
   const backendUrl = import.meta.env.VITE_BACKEND_URL
   if (!backendUrl) {
     throw new Error('VITE_BACKEND_URL is not set in .env')
   }
 
-  const fetchOrgContent = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
+  const { data: orgContent, error } = useQuery<OrgContent>({
+    queryKey: ['orgContent'],
+    refetchOnMount: 'always',
+    queryFn: async () => {
       // Get the access token from Supabase
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
       if (sessionError) {
-        setError(`Failed to get session: ${sessionError.message}`)
-        setLoading(false)
-        return
+        throw new Error(`Failed to get session: ${sessionError.message}`)
       }
 
       if (!session) {
-        setError('You must be signed in to view organization content')
-        setLoading(false)
-        return
+        throw new Error('You must be signed in to view organization content')
       }
 
       const accessToken = session.access_token
@@ -56,22 +48,12 @@ export default function Customize() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.detail || 'Failed to fetch organization content')
-        setLoading(false)
-        return
+        throw new Error(data.detail || 'Failed to fetch organization content')
       }
 
-      setOrgContent(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchOrgContent()
-  }, [])
+      return data
+    },
+  })
 
   return (
     <div className="flex min-h-screen overflow-x-hidden">
@@ -85,15 +67,9 @@ export default function Customize() {
           Configure your settings and preferences below.
         </p>
 
-        {loading && (
-          <div className="mb-6 p-4 bg-[#f9fafb] border border-[#e5e7eb] rounded-md">
-            <p className="text-sm text-[#6b7280]">Loading organization content...</p>
-          </div>
-        )}
-
         {error && (
           <div className="mb-6 p-4 bg-[#fef2f2] border border-[#fecaca] rounded-md text-[#991b1b] text-sm">
-            {error}
+            {error instanceof Error ? error.message : 'An unexpected error occurred'}
           </div>
         )}
         
@@ -104,12 +80,18 @@ export default function Customize() {
           companyName={orgContent?.company_name || ''}
           defaultAddress={orgContent?.default_address || ''}
           timeZone={orgContent?.time_zone || ''}
+          onUpdate={() => {
+            queryClient.invalidateQueries({ queryKey: ['orgContent'] })
+          }}
         />
 
         <TimesOpenCard 
           title="Times Open"
           description="Configure your business hours and availability"
           defaultHoursOfOperation={orgContent?.default_hours_of_operation || ''}
+          onUpdate={() => {
+            queryClient.invalidateQueries({ queryKey: ['orgContent'] })
+          }}
         />
       </div>
     </div>
