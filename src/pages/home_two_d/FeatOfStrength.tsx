@@ -194,8 +194,8 @@ function FeatOfStrength() {
       }
 
       // Start call with squad configuration
-      // Format: vapi.start(null, null, squadConfig)
-      vapi.start(null, null, squadConfig)
+      // Format: vapi.start(undefined, undefined, squadConfig)
+      vapi.start(undefined, undefined, squadConfig)
     } catch (err) {
       setIsLoading(false)
       setError(err instanceof Error ? err.message : 'Failed to start call')
